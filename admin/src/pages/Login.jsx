@@ -58,6 +58,10 @@ export default function Login() {
         >
           {busy ? "Signing in..." : "Login"}
         </button>
+        <div className="mt-4 text-sm text-gray-500">
+          <p>Email: admin@studio.demo</p>
+          <p>Password: 123456</p>
+        </div>
       </form>
     </div>
   );
