@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <title>Payment Success</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg:#f7f8fb; --card:#ffffff; --ink:#111319; --muted:#6b717c; --border:#e9ebf0;
+      --shadow:0 8px 28px rgba(17,19,25,.08), 0 2px 6px rgba(17,19,25,.05);
+      --radius:16px; --brand:#2563eb; --ok:#16a34a; --err:#dc2626;
+    }
+    *{box-sizing:border-box}
+    body{font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial;margin:0;background:var(--bg);color:var(--ink)}
+    .wrap{max-width:720px;margin:56px auto 72px;padding:0 20px}
+    .card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:24px}
+    .center{text-align:center}
+    .muted{color:var(--muted)}
+    .row{display:flex;justify-content:space-between;gap:12px;margin:6px 0}
+    .hr{height:1px;background:var(--border);margin:10px 0}
+    .spinner{width:40px;height:40px;border:3px solid var(--border);border-top-color:var(--brand);border-radius:50%;margin:16px auto;animation:spin 1s linear infinite}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .ok{color:var(--ok);font-weight:700}
+    .err{color:var(--err);font-weight:700}
+    .btn{display:inline-block;margin-top:14px;background:var(--brand);color:#fff;padding:10px 14px;border-radius:10px;text-decoration:none}
+    .small{font-size:13px}
+    .ref{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;font-size:13px;background:#f2f4f8;border:1px solid var(--border);border-radius:8px;padding:4px 8px;display:inline-block}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card" id="box">
+      <h2 class="center">Finalizing your booking…</h2>
+      <div class="spinner" aria-hidden="true"></div>
+      <p class="muted center small">Please wait while we confirm your payment.</p>
+    </div>
+  </div>
+
+  <script>
+    // If Paymob loaded this page inside the iframe, pop out to the top window.
+    if (window !== window.top) window.top.location = window.location.href;
+
+    // Helpers
+    const isTrue = v => String(v).toLowerCase() === "true";
+    const egp = n => {
+      try { return "EGP " + Number(n).toLocaleString('en-EG'); }
+      catch { return "EGP " + n; }
+    };
+    const redirectToFailure = (reason, extras = {}) => {
+      const q = new URLSearchParams({
+        reason: reason || "Payment not approved",
+        ...extras,
+      });
+      location.replace("/failure.html?" + q.toString());
+    };
+
+    // Main
+    (async () => {
+      const box = document.getElementById("box");
+      const p = new URLSearchParams(location.search);
+
+      // merchant_order_id from localStorage (set at session creation) or URL
+      const merchantOrderId =
+        localStorage.getItem("merchant_order_id") ||
+        p.get("merchant_order_id") ||
+        p.get("merchant_order") ||
+        p.get("merchantOrderId") || "";
+
+      if (!merchantOrderId) {
+        return redirectToFailure("Missing merchant_order_id");
+      }
+
+      // Approval gates from Paymob redirect params
+      const successParam = p.get("success");
+      const pendingParam = p.get("pending");
+      const errorOccured = p.get("error_occured");
+      const respCode = (p.get("txn_response_code") || "").toUpperCase();
+      const orderId = p.get("order") || "";
+
+      // Be strict: must be success=true, not pending, no error, and APPROVED/SUCCESS code
+      const approvedCodes = new Set(["APPROVED", "SUCCESS"]);
+      const isApproved =
+        isTrue(successParam) &&
+        !isTrue(pendingParam) &&
+        !isTrue(errorOccured) &&
+        approvedCodes.has(respCode);
+
+      // If not approved, do NOT hit the server; just fail/redirect
+      if (!isApproved) {
+        return redirectToFailure(
+          p.get("data.message") || "Payment not approved",
+          {
+            code: respCode || "",
+            order: orderId || "",
+            merchant_order_id: merchantOrderId
+          }
+        );
+      }
+
+      // Call server to finalize (server should also validate again)
+      try {
+        const r = await fetch("/api/paymob/confirm", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            merchant_order_id: merchantOrderId,
+            success: true,
+            pending: false,
+            txn_response_code: respCode,
+            order_id: orderId
+          })
+        });
+
+        const data = await r.json().catch(() => ({}));
+        if (!r.ok || !data.ok) {
+          return redirectToFailure(data.error || "Confirmation failed", {
+            order: orderId || "",
+            merchant_order_id: merchantOrderId
+          });
+        }
+
+        // Success UI
+        localStorage.removeItem("merchant_order_id");
+        const b = data.booking || {};
+        const dateStr = b.timeLabel && b.timeZone
+          ? `${b.timeLabel} ${b.timeZone}`
+          : (b.dateISO ? new Date(b.dateISO).toLocaleString() : "");
+
+        box.innerHTML = `
+          <h2 class="ok center">Payment successful 🎉</h2>
+          <p class="center">Your booking is confirmed. A confirmation email has been sent.</p>
+          ${data.bookingId ? `<p class="center small">Reference: <span class="ref">${data.bookingId}</span></p>` : ""}
+
+          <div style="margin-top:16px">
+            <div class="row">
+              <div><strong>${b.typeName || ""}</strong></div>
+              <div>${b.price ? egp(b.price) : ""}</div>
+            </div>
+            ${dateStr ? `<div class="row muted small"><div>${dateStr}</div><div></div></div>` : ""}
+            ${b.depositAmount ? `<div class="row small"><div>Deposit</div><div><strong>${egp(b.depositAmount)}</strong></div></div>` : ""}
+            ${b.remainingAmount ? `<div class="row small"><div>Remaining</div><div>${egp(b.remainingAmount)}</div></div>` : ""}
+            <div class="hr"></div>
+          </div>
+
+          <div class="center">
+            <a class="btn" href="/index.html">Back to Home</a>
+          </div>
+        `;
+      } catch (err) {
+        console.error(err);
+        return redirectToFailure("Network error while confirming booking", {
+          order: orderId || "",
+          merchant_order_id: merchantOrderId
+        });
+      }
+    })();
+  </script>
+</body>
+</html>

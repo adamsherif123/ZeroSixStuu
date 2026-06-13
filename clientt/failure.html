@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <title>Payment Failed</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root{--bg:#f7f8fb;--card:#fff;--ink:#111319;--muted:#6b717c;--border:#e9ebf0;--err:#dc2626;--radius:16px;--shadow:0 8px 28px rgba(17,19,25,.08),0 2px 6px rgba(17,19,25,.05)}
+    *{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial}
+    .wrap{max-width:680px;margin:40px auto;padding:0 16px}
+    .card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:24px}
+    h2{margin:0 0 10px} .muted{color:var(--muted)} .err{color:var(--err);font-weight:700}
+    .row{display:flex;justify-content:space-between;gap:10px;margin:6px 0}
+    .btn{display:inline-block;margin-top:16px;background:#111319;color:#fff;padding:10px 14px;border-radius:10px;text-decoration:none}
+    .small{font-size:13px}
+    .ref{font-family:ui-monospace,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;border:1px solid var(--border);border-radius:8px;padding:4px 8px;display:inline-block}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <h2 class="err">Payment was not approved</h2>
+      <p class="muted" id="reason"></p>
+      <div class="row small"><div>Order</div><div id="order" class="ref"></div></div>
+      <div class="row small"><div>Merchant Order</div><div id="mo" class="ref"></div></div>
+      <div class="row small"><div>Code</div><div id="code" class="ref"></div></div>
+      <a class="btn" href="/index.html">Try again</a>
+    </div>
+  </div>
+  <script>
+    const p = new URLSearchParams(location.search);
+    document.getElementById('reason').textContent = p.get('reason') || 'Your card was declined or the transaction could not be completed.';
+    document.getElementById('order').textContent  = p.get('order') || '—';
+    document.getElementById('mo').textContent     = p.get('merchant_order_id') || '—';
+    document.getElementById('code').textContent   = p.get('code') || '—';
+  </script>
+</body>
+</html>

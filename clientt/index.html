@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Studio Booking — Client</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="wrap">
+    <!-- Welcome -->
+    <section class="hero">
+      <h1>Welcome to Your Studio</h1>
+      <p>Pick a date and time to reserve your session. A 50% deposit secures your slot.</p>
+    </section>
+
+    <section class="card">
+      <!-- Step 1: Choose booking type -->
+      <div id="step-type" class="step">
+        <div class="step-head">
+          <h2>Choose your booking type</h2>
+        </div>
+        <div id="typeGrid" class="type-grid"></div>
+      </div>
+
+      <!-- Step 2: Calendar & time slots -->
+      <div id="step-calendar" class="step hidden">
+        <div class="bar">
+          <button id="changeTypeBtn" class="btn-ghost">Back</button>
+          <div class="bar-right"></div>
+        </div>
+
+        <div class="layout">
+          <!-- Left: Calendar -->
+          <div>
+            <div class="cal-header">
+              <button class="nav" id="prev">
+                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M15 6l-6 6 6 6" stroke="#111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </button>
+              <div class="cal-title" id="monthLabel">September 2025</div>
+              <button class="nav" id="next" style="margin-left:auto">
+                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M9 6l6 6-6 6" stroke="#111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </button>
+            </div>
+            <div class="dow">
+              <div>S</div><div>M</div><div>T</div><div>W</div><div>T</div><div>F</div><div>S</div>
+            </div>
+            <div id="calGrid" class="grid"></div>
+          </div>
+
+          <!-- Right: Day title + timezone + slots -->
+          <div class="right">
+            <h3 id="dayTitle">Friday, September 12, 2025</h3>
+            <div class="tz" id="tzInfo">Time Zone: Africa/Cairo (GMT+02:00)</div>
+            <div id="times" class="times"></div>
+            <div id="priceSummary" class="price-summary"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 3: Your Information -->
+      <div id="step-info" class="step hidden">
+        <div class="bar">
+          <button id="backToCalendar" class="btn-ghost">Back</button>
+          <div class="bar-right"></div>
+        </div>
+
+        <h2 style="margin:0 0 12px;">Booking Information</h2>
+
+        <!-- Stacked cards: Appointment then User Info -->
+        <div class="info-grid">
+          <!-- Appointment Card -->
+          <section class="panel">
+            <div class="panel-head">APPOINTMENT</div>
+            <div class="appt-wrap">
+              <img class="appt-media" id="apptImg" src="" alt="Studio preview" loading="lazy">
+              <div class="appt-body" id="apptSummary"></div>
+              <button class="x-icon" type="button" id="clearSelection" title="Remove selection" aria-label="Remove selection">×</button>
+            </div>
+          </section>
+
+          <!-- User Info Card -->
+          <section class="panel">
+            <div class="panel-head">YOUR INFORMATION</div>
+            <form id="userForm" class="form">
+              <div class="name-row">
+                <label class="field">
+                  <span>FIRST NAME<span class="req">*</span></span>
+                  <input required type="text" name="firstName" placeholder="">
+                </label>
+                <label class="field">
+                  <span>LAST NAME<span class="req">*</span></span>
+                  <input required type="text" name="lastName" placeholder="">
+                </label>
+              </div>
+
+              <label class="field">
+                <span>PHONE<span class="req">*</span></span>
+                <input
+                  required
+                  id="phone"
+                  name="phone"
+                  type="tel"
+                  inputmode="numeric"
+                  autocomplete="tel"
+                  placeholder="+20 10 1234 5678"
+                  pattern="^\+20\s?(10|11|12|15)\s?\d{4}\s?\d{4}$"
+                >
+              </label>
+
+              <label class="field">
+                <span>EMAIL<span class="req">*</span></span>
+                <input required type="email" name="email" placeholder="you@example.com" autocomplete="email">
+              </label>
+
+              <label class="field">
+                <span>BRAND / AGENCY</span>
+                <input type="text" id="brandAgency" name="brandAgency" placeholder="(optional)" autocomplete="organization">
+              </label>
+
+              <label class="field">
+                <span>PROMO CODE</span>
+                <input type="text" id="promoCode" name="promoCode" placeholder="Enter code (optional)" autocomplete="off" autocapitalize="characters">
+              </label>
+
+              <div class="form-actions">
+                <button type="submit" class="btn-primary">Continue to Payment</button>
+              </div>
+            </form>
+          </section>
+        </div>
+      </div>
+
+      <!-- Step 4: Payment -->
+<div id="step-payment" class="step hidden">
+  <div class="bar">
+    <button id="backToInfo" class="btn-ghost">Back</button>
+    <div class="bar-right"></div>
+  </div>
+
+
+  <div class="info-grid">
+    <!-- PAYMENT (LEFT) -->
+    <section class="panel">
+      <div class="panel-head">PAYMENT</div>
+
+      <!-- Paymob iframe (hidden until token loaded) -->
+      <iframe id="paymobIframe" style="display:none; width:100%; height:420px; border:0; border-radius:10px;"></iframe>
+
+      <!-- Placeholder when not live -->
+      <div id="cardPlaceholder" style="padding:16px; border:1px dashed #e5e7ec; border-radius:12px; margin-bottom:12px;">
+        Card form will appear here when Paymob is connected.
+      </div>
+
+      <div style="display:flex; justify-content:flex-end; gap:8px;">
+        <button id="payBtn" class="btn-primary">Pay Deposit</button>
+      </div>
+    </section>
+
+
+    <!-- ORDER SUMMARY (RIGHT) -->
+    <section class="panel">
+      <div class="panel-head">ORDER SUMMARY</div>
+      <div id="orderSummary"></div>
+      <p id="dueTodayNote" class="muted" style="margin-top:10px;"></p>
+    </section>
+  </div>
+</div>
+
+    </section>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
